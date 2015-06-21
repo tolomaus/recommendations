@@ -17,6 +17,7 @@
 package be.bartholomeus.recommend.videos.domain;
 
 import be.bartholomeus.recommend.videos.VideosComputingEngine;
+import be.bartholomeus.recommend.videos.log.RecommendationsRememberingLogger;
 import com.graphaware.common.util.IterableUtils;
 import com.graphaware.reco.generic.config.Config;
 import com.graphaware.reco.generic.context.SimpleContext;
@@ -79,6 +80,11 @@ public class VideosComputingEngineTest extends DatabaseIntegrationTest {
             List<Recommendation<Node>> videosForPatrick = engine.recommend(patrick, new SimpleContext<Node, Node>(patrick, Config.UNLIMITED)).get(Integer.MAX_VALUE);
 
             assertEquals(1, videosForPatrick.size());
+
+            String expectedForPatrick = "Computed recommendations for Patrick: (Amika episode 2 {total:14.866008, videos: {value:14.866008, {value:1.0, person:Niek, video:Amika episode 1}}})";
+            String recommendedForPatrick = new RecommendationsRememberingLogger().toString(patrick, videosForPatrick, null);
+
+            assertEquals(expectedForPatrick, recommendedForPatrick);
 
             tx.success();
         }
