@@ -1,4 +1,4 @@
-package be.bartholomeus.recommend.videos.log;
+package be.bartholomeus.recommend.friends.log;
 
 import com.graphaware.reco.generic.context.Context;
 import com.graphaware.reco.generic.log.Slf4jRecommendationLogger;

@@ -14,7 +14,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-package be.bartholomeus.recommend.videos.domain;
+package be.bartholomeus.recommend.friends.domain;
 
 import org.neo4j.graphdb.RelationshipType;
 
@@ -22,6 +22,6 @@ import org.neo4j.graphdb.RelationshipType;
  * Relationships in the system.
  */
 public enum Relationships implements RelationshipType {
-    WATCHED,
-    CATEGORIZED_BY,
+    FRIEND_OF,
+    LIVES_IN,
 }

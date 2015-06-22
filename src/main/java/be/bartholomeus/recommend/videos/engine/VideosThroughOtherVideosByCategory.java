@@ -1,33 +1,30 @@
 package be.bartholomeus.recommend.videos.engine;
 
-
 import be.bartholomeus.recommend.videos.domain.Relationships;
 import com.graphaware.reco.generic.transform.ParetoScoreTransformer;
 import com.graphaware.reco.generic.transform.ScoreTransformer;
-import com.graphaware.reco.neo4j.engine.CollaborativeEngine;
 import org.neo4j.graphdb.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class VideosToWatch extends CollaborativeEngine {
-
-    private final Label PERSON = DynamicLabel.label("Person");
+public class VideosThroughOtherVideosByCategory extends ContentBasedEngine {
     private final Label VIDEO = DynamicLabel.label("Video");
+    private final Label CATEGORY = DynamicLabel.label("Category");
 
     @Override
     public String name() {
-        return "videos";
+        return "content-based";
     }
 
     @Override
-    protected RelationshipType getType() {
+    protected RelationshipType getContentRelationshipType() {
         return Relationships.WATCHED;
     }
 
     @Override
-    protected Direction getDirection() {
-        return Direction.OUTGOING;
+    protected RelationshipType getSimilarityRelationshipType() {
+        return Relationships.CATEGORIZED_BY;
     }
 
     @Override
@@ -37,7 +34,7 @@ public class VideosToWatch extends CollaborativeEngine {
 
     @Override
     protected boolean acceptableSimilarNode(Node node) {
-        return node.hasLabel(PERSON);
+        return node.hasLabel(CATEGORY);
     }
 
     @Override
@@ -46,10 +43,23 @@ public class VideosToWatch extends CollaborativeEngine {
     }
 
     @Override
+    protected int scoreNode(Node recommendation, Node throughNode, Node similarNode, Relationship r1, Relationship r2, Relationship r3) {
+        int score = 1;
+        if(recommendation.getProperty("series").equals(throughNode.getProperty("series"))){
+            score += 1;
+        }
+
+        return score;
+    }
+
+    @Override
     protected Map<String, Object> details(Node throughNode, Node similarNode, Relationship r1, Relationship r2, Relationship r3) {
         Map<String, Object> result = new HashMap<>();
         result.put("video", throughNode.getProperty("name"));
-        result.put("person", similarNode.getProperty("name"));
+        result.put("category", similarNode.getProperty("name"));
+        //result.put("scoreTransformer", scoreTransformer().getClass());
+        Node recommendationNode = r3.getOtherNode(similarNode);
+        result.put("sameSeries", throughNode.getProperty("series").equals(recommendationNode.getProperty("series")));
         return result;
     }
 }

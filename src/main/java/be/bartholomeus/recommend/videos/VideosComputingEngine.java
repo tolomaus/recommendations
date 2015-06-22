@@ -16,13 +16,16 @@
 
 package be.bartholomeus.recommend.videos;
 
-import be.bartholomeus.recommend.videos.domain.Relationships;
-import be.bartholomeus.recommend.videos.engine.VideosToWatch;
+import be.bartholomeus.recommend.videos.engine.VideosThroughOtherPersons;
+import be.bartholomeus.recommend.videos.engine.VideosThroughOtherVideosByCategory;
+import be.bartholomeus.recommend.videos.filter.AlreadyWatchedVideoBlacklistBuilder;
+import be.bartholomeus.recommend.videos.post.PenalizeAlreadyRecommended;
+import be.bartholomeus.recommend.videos.post.RewardHotVideo;
+import be.bartholomeus.recommend.videos.post.RewardNewVideo;
 import com.graphaware.reco.generic.engine.RecommendationEngine;
 import com.graphaware.reco.generic.filter.BlacklistBuilder;
+import com.graphaware.reco.generic.post.PostProcessor;
 import com.graphaware.reco.neo4j.engine.Neo4jTopLevelDelegatingEngine;
-import com.graphaware.reco.neo4j.filter.ExistingRelationshipBlacklistBuilder;
-import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 
 import java.util.Arrays;
@@ -36,14 +39,24 @@ public class VideosComputingEngine extends Neo4jTopLevelDelegatingEngine {
     @Override
     protected List<RecommendationEngine<Node, Node>> engines() {
         return Arrays.<RecommendationEngine<Node, Node>>asList(
-                new VideosToWatch()
+                new VideosThroughOtherPersons(),
+                new VideosThroughOtherVideosByCategory()
         );
     }
 
     @Override
     protected List<BlacklistBuilder<Node, Node>> blacklistBuilders() {
         return Arrays.<BlacklistBuilder<Node, Node>>asList(
-                new ExistingRelationshipBlacklistBuilder(Relationships.WATCHED, Direction.BOTH)//TODO pick either INCOMING or OUTGOING
+                new AlreadyWatchedVideoBlacklistBuilder()
+        );
+    }
+
+    @Override
+    protected List<PostProcessor<Node, Node>> postProcessors() {
+        return Arrays.asList(
+                new PenalizeAlreadyRecommended(),
+                new RewardHotVideo(),
+                new RewardNewVideo()
         );
     }
 }

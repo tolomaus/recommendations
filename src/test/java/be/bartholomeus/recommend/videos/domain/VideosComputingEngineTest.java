@@ -17,11 +17,9 @@
 package be.bartholomeus.recommend.videos.domain;
 
 import be.bartholomeus.recommend.videos.VideosComputingEngine;
-import be.bartholomeus.recommend.videos.log.RecommendationsRememberingLogger;
+import be.bartholomeus.recommend.videos.log.RecommendationsFormatter;
 import com.graphaware.common.util.IterableUtils;
-import com.graphaware.reco.generic.config.Config;
-import com.graphaware.reco.generic.context.SimpleContext;
-import com.graphaware.reco.generic.engine.RecommendationEngine;
+import com.graphaware.reco.generic.config.SimpleConfig;
 import com.graphaware.reco.generic.result.Recommendation;
 import com.graphaware.test.integration.DatabaseIntegrationTest;
 import org.junit.Test;
@@ -30,13 +28,14 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
 public class VideosComputingEngineTest extends DatabaseIntegrationTest {
 
-    private RecommendationEngine<Node, Node> engine = new VideosComputingEngine();
+    private VideosComputingEngine engine = new VideosComputingEngine();
 
     @Override
     protected void populateDatabase(GraphDatabaseService database) {
@@ -44,21 +43,22 @@ public class VideosComputingEngineTest extends DatabaseIntegrationTest {
                 "CREATE " +
                         "(n:Person:Male {name:'Niek', age:9})," +
                         "(p:Person:Male {name:'Patrick', age:12})," +
+                        "(j:Person:Male {name:'Jan', age:13})," +
 
                         "(amika1:Video {name:'Amika episode 1', series:'Amika'})," +
                         "(amika2:Video {name:'Amika episode 2', series:'Amika'})," +
-                        "(amika3:Video {name:'Amika episode 3', series:'Amika'})," +
+                        "(amika3:Video {name:'Amika episode 3', series:'Amika', created:" + new Date().getTime() + "})," +
 
                         "(bob1:Video {name:'Bob De Bouwer episode 1', series:'Bob De Bouwer'})," +
                         "(bob2:Video {name:'Bob De Bouwer episode 2', series:'Bob De Bouwer'})," +
                         "(bob3:Video {name:'Bob De Bouwer episode 3', series:'Bob De Bouwer'})," +
-                        "(bob4:Video {name:'Bob De Bouwer episode 4', series:'Bob De Bouwer'})," +
+                        "(bob4:Video {name:'Bob De Bouwer episode 4', series:'Bob De Bouwer', created:" + new Date().getTime() + "})," +
 
                         "(smurf1:Video {name:'De Smurfen episode 1', series:'De Smurfen'})," +
                         "(smurf2:Video {name:'De Smurfen episode 2', series:'De Smurfen'})," +
                         "(smurf3:Video {name:'De Smurfen episode 3', series:'De Smurfen'})," +
                         "(smurf4:Video {name:'De Smurfen episode 4', series:'De Smurfen'})," +
-                        "(smurf5:Video {name:'De Smurfen episode 5', series:'De Smurfen'})," +
+                        "(smurf5:Video {name:'De Smurfen episode 5', series:'De Smurfen', created:" + new Date().getTime() + "})," +
 
                         "(ice:Video {name:'Ketnet On Ice'})," +
 
@@ -66,25 +66,70 @@ public class VideosComputingEngineTest extends DatabaseIntegrationTest {
 
                         "(piet15:Video {name:'Piet Piraat episode 15', series:'Piet Piraat'})," +
 
-                        "(n)-[:WATCHED]->(amika1)," +
+                        "(cartoons:Category {name:'Cartoons'})," +
+                        "(kids:Category {name:'Kids'})," +
+                        "(liveshow:Category {name:'Live Show'})," +
+
+                        "(amika1)-[:CATEGORIZED_BY]->(kids)," +
+                        "(amika2)-[:CATEGORIZED_BY]->(kids)," +
+                        "(amika3)-[:CATEGORIZED_BY]->(kids)," +
+
+                        "(bob1)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(bob2)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(bob3)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(bob4)-[:CATEGORIZED_BY]->(cartoons)," +
+
+                        "(smurf1)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(smurf2)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(smurf3)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(smurf4)-[:CATEGORIZED_BY]->(cartoons)," +
+                        "(smurf5)-[:CATEGORIZED_BY]->(cartoons)," +
+
+                        "(ice)-[:CATEGORIZED_BY]->(liveshow)," +
+
+                        "(kuifje7)-[:CATEGORIZED_BY]->(cartoons)," +
+
+                        "(piet15)-[:CATEGORIZED_BY]->(kids)," +
+
+                        "(n)-[:WATCHED{date:" + new Date().getTime() + "}]->(amika1)," +
                         "(n)-[:WATCHED]->(amika2)," +
 
-                        "(p)-[:WATCHED]->(amika1)");
+                        "(n)-[:WATCHED]->(bob1)," +
+                        "(n)-[:WATCHED]->(bob2)," +
+                        "(n)-[:WATCHED{date:" + new Date().getTime() + "}]->(bob3)," +
+
+                        "(j)-[:WATCHED]->(amika1)," +
+                        "(j)-[:WATCHED{date:" + new Date().getTime() + "}]->(amika3)," +
+
+                        "(p)-[:WATCHED]->(amika1)," +
+
+                        "(p)-[:WATCHED]->(bob1)," +
+                        "(p)-[:WATCHED{date:" + new Date().getTime() + "}]->(bob2)," +
+                        "(p)-[:WATCHED]->(bob3)" +
+
+                        "");
     }
 
     @Test
     public void shouldComputeVideos() {
         try (Transaction tx = getDatabase().beginTx()) {
+            RecommendationsFormatter formatter = new RecommendationsFormatter();
+
+            Node niek = getPersonByName("Niek");
+            List<Recommendation<Node>> videosForNiek = engine.recommend(niek, new SimpleConfig(Integer.MAX_VALUE));
+
+            System.out.println(formatter.format(niek, videosForNiek, null));
+
+            assertEquals(9, videosForNiek.size());
+
+            Recommendation<Node> firstReco = videosForNiek.get(0);
+            float score = firstReco.getScore().getTotalScore();
+            assertEquals("Amika episode 3", itemToString(firstReco.getItem()));
 
             Node patrick = getPersonByName("Patrick");
-            List<Recommendation<Node>> videosForPatrick = engine.recommend(patrick, new SimpleContext<Node, Node>(patrick, Config.UNLIMITED)).get(Integer.MAX_VALUE);
+            List<Recommendation<Node>> videosForPatrick = engine.recommend(patrick, new SimpleConfig(Integer.MAX_VALUE));
 
-            assertEquals(1, videosForPatrick.size());
-
-            String expectedForPatrick = "Computed recommendations for Patrick: (Amika episode 2 {total:14.866008, videos: {value:14.866008, {value:1.0, person:Niek, video:Amika episode 1}}})";
-            String recommendedForPatrick = new RecommendationsRememberingLogger().toString(patrick, videosForPatrick, null);
-
-            assertEquals(expectedForPatrick, recommendedForPatrick);
+            System.out.println(formatter.format(patrick, videosForPatrick, null));
 
             tx.success();
         }
@@ -92,6 +137,10 @@ public class VideosComputingEngineTest extends DatabaseIntegrationTest {
 
     private Node getPersonByName(String name) {
         return IterableUtils.getSingle(getDatabase().findNodes(DynamicLabel.label("Person"), "name", name));
+    }
+
+    private String itemToString(Node item) {
+        return item.getProperty("name", "unknown").toString();
     }
 
 }
