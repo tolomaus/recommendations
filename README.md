@@ -21,7 +21,7 @@ Some special cases can add a small bonus to the scores:
 - hot videos (videos that are being watched by many people at the moment) ([RewardHotVideo](https://github.com/tolomaus/recommendations/blob/master/src/main/java/be/bartholomeus/recommend/videos/post/RewardHotVideo.java))
 
 And one special case will incur a little penalty to the score:
-- videos that were already recommended recently ([PenalizeAlreadyRecommended(https://github.com/tolomaus/recommendations/blob/master/src/main/java/be/bartholomeus/recommend/videos/post/PenalizeAlreadyRecommended.java)])
+- videos that were already recommended recently ([PenalizeAlreadyRecommended](https://github.com/tolomaus/recommendations/blob/master/src/main/java/be/bartholomeus/recommend/videos/post/PenalizeAlreadyRecommended.java)])
 
 ## Architecture
 
